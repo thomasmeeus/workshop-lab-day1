@@ -25,6 +25,9 @@ Click on the “Project: all projects” button and select “Create Project” 
 
 ### Let’s launch a terminal.
 
+Top-right on the webinterface there's a dropdown which contains the option to 'copy login command'. 
+You can be prompted to authenticate again. You can use the generated string to authenticate from the CLI.
+
 Open a terminal on your local workstation and execute the `oc login $OPENSHIFT_URI` command.
 
 You will be prompted for your credentials. 
@@ -50,7 +53,7 @@ oc get project lab1-$USER -o yaml
 
 It’s easy to get started with OpenShift whether you’re using our app templates or bringing your existing assets. In this quick lab we will deploy an application using an exisiting container image. OpenShift will create an image stream for the image as well as deploy and manage containers based on that image.
 
-### Let’s point OpenShift to an existing built container image
+### Let’s point OpenShift to an existing container image
 
 Launch a pre-existing container from a container registry.
 
@@ -174,38 +177,35 @@ $ oc delete all --selector app=nexus
 
 In this lab, you’ve deployed an example container image into a pod running in OpenShift. You exposed a route for clients to access that service via their web browsers. And you learned how to get and describe resources using the command line and the web console. Hopefully, this basic lab also helped to get you familiar with using the CLI and navigating within the web console.
 
-## 4. Deploying an App with S2I
+## 4. Deploying an the Metro Map App
 
-### Source to Image (S2I)
-One of the useful components of OpenShift is its source-to-image capability. S2I is a framework that makes it easy to turn your source code into runnable images. The main advantage of using S2I for building reproducible docker images is the ease of use for developers. You’ll see just how simple it can be in this lab.
-
-### Let’s build a node.js web app, using S2I
-We can do this either via the command line or the web console. You decide which you’d rather do and follow the steps below.
+Deploy the Metro Map application which is hosted on the Quay.io registry:
 
 ```
 $ oc project lab1-$USER
-$ oc new-app --name=dc-metro-map https://github.com/RedHatGov/openshift-workshops.git --context-dir=dc-metro-map --as-deployment-config=true
+$ oc new-app --image quay.io/thomasmeeus/metro-map:latest --name dc-metro-map
 $ oc expose service dc-metro-map
 ```
 
-### Check out the build details
+### Check out the events
 
-We can see the details of what the S2I builder did. This can be helpful to diagnose issues if builds are failing.
+We can see the details of Openshift did to deploy this app:
 
 Goto the terminal and type the following:
 
 ```
-$ oc get builds
+$ oc get events
 ```
 
-Note the name of your build from the above command output and use it to see the logs with:
+You can also view the pod logs via 
 
 ```
-$ oc logs builds/[BUILD_NAME]
+$ oc logs pod/dc-metro-map-xxxx
 ```
 
-The console will print out the full log for your build. Note, you could pipe this to more or less for easier viewing in the CLI.
-Add the `-f` parameter to follow the log output until you see `Push successful`
+The console will print out the full log for your app. Note, you could pipe this to `more` or `less` for easier viewing in the CLI.
+
+Both outputs can also be viewed in the webinterface, try to discover their location!
 
 ### See the app in action
 Let’s see this app in action!
@@ -253,42 +253,22 @@ The dc provides us details we care about to see where our application image come
 Type the following to find out more about our dc:
 
 ```
-$ oc describe deploymentconfig/dc-metro-map
+$ oc describe deployment/dc-metro-map
 ```
 
 Notice under the template section it lists the containers it wants to deploy along with the path to the container image.
 
- There are a few other ways you could get to this information. If you are feeling adventurous, you might also want to try to:
-describe the replication controller
-`oc describe rc -l app=dc-metro-map`
-describe the image stream
-`oc describe is -l app=dc-metro-map`
-describe the running pods
+There are a few other ways you could get to this information. A similar output can be seen when describing the pod's content:
+
 `oc describe pod`
 
-Because we built this app using S2I, we get to see the details about the build - including the container image that was used for building the source code. So let’s find out where the image came from. Here are the steps to get more information about the build configuration (bc) and the builds themselves.
+We can verify the source of the image, its registry and the tag that got deployed. We also see on which port the application is listening on. Take note of the 'conditions' which display a health overview of your pod.
 
- Type the following to find out more about our bc:
-
-```
-$ oc describe bc/dc-metro-map
-```
-
-Notice the information about the configuration of how this app gets built. In particular look at the github URL, the webhooks you can use to automatically trigger a new build, the docker image where the build runs inside of, and the builds that have been completed. New let’s look at one of those builds.
-
- Type the following:
-
-```
-$ oc describe build/dc-metro-map-1
-```
-
-This shows us even more about the deployed container’s build and source code, including exact commit information, for this build. We can also see the commit’s author, and the commit message. You can inspect the code by opening a web browser and pointing it to a specific commit, like this:
-
-https://github.com/RedHatGov/redhatgov.github.io/commit/2d5078cc5bbdf3cf63c5ab15e1628f30b3c89954
+Copy the registry image url in your webbrowser and verify the details of the image in the Quay web interface. Verify the tags, history and security status of the provided image. 
 
 ## 6. Pod Logs
 
-In the S2I lab we looked at a build log to inspect the process of turning source code into an image. Now let’s inspect the log for a running pod - in particular let’s see the web application’s logs.
+Let’s inspect the log for a running pod - in particular let’s see the web application’s logs.
 
 Goto the terminal and type the following:
 
@@ -317,14 +297,13 @@ Let’s have a little fun. The app has some easter eggs that get triggered when 
 Goto the terminal and type the following:
 
 ```
-$ oc set env deploymentconfig/dc-metro-map -e BEERME=true
+$ oc set env deployment/dc-metro-map -e BEERME=true
 $ oc get pods -w
 ```
 
 Due to the deployment config strategy being set to “Rolling” and the “ConfigChange” trigger being set, OpenShift auto deployed a new pod as soon as you updated the environment variable. If you were quick enough, you might have seen this happening, with the “oc get pods -w” command
 
 Type Ctrl+C to stop watching the pods
-You can set environment variables, across all deployment configurations, with 'dc --all', instead of specifying a specific DC.
 
 With the new environment variables set the app should look like this in your web browser (with beers instead of buses ):
 
@@ -466,22 +445,6 @@ Annotations:  k8s.v1.cni.cncf.io/networks-status:
                 [{
 ```
 
-or for Windows Powershell
-
-```
-$ oc get pods
-$ oc describe pod/<POD_NAME> | Select-String "Labels:" -Context 4
-Namespace:    demo-1
-Priority:     0
-Node:         ip-10-0-132-38.us-east-2.compute.internal/10.0.132.38
-Start Time:   Tue, 14 Apr 2020 17:41:58 +0000
-Labels:       app=dc-metro-map
-              deploymentconfig=dc-metro-map
-              pod-template-hash=7bc46bf89d
-Annotations:  k8s.v1.cni.cncf.io/networks-status:
-                [{
-```
-
 You can see the Labels automatically added contain the app, deployment, and deploymentconfig. Let’s add a new label to this pod.
 
 ### Add a label
@@ -503,22 +466,6 @@ Labels:       app=dc-metro-map
               pod-template-hash=7bc46bf89d
               testdate=4.14.2020
               testedby=mylastname
-```
-
-or for Windows Powershell
-
-```
-$ oc describe pod/<POD_NAME> | Select-String "Labels:" -Context 4
-Namespace:    demo-1
-Priority:     0
-Node:         ip-10-0-132-38.us-east-2.compute.internal/10.0.132.38
-Start Time:   Tue, 14 Apr 2020 17:41:58 +0000
-Labels:       app=dc-metro-map
-              deploymentconfig=dc-metro-map
-              pod-template-hash=7bc46bf89d
-              testdate=4.14.2020
-              testedby=mylastname
-                [{
 ```
 
 ### Cleanup
