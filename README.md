@@ -95,6 +95,8 @@ ore of the commands below:
 
 ```
 
+Review the output and notice that OpenShift suggest some next steps to be done after your deployment. 
+
 Now, let's create a route, so that you can get to the app:
 
 ```
@@ -143,13 +145,6 @@ Fetch the route of our newly deployed Nexus instance and visit the webapp:
 ```bash
 echo "http://$(oc get route nexus -o jsonpath='{.spec.host}{.spec.path}')"
 ````
-
-or powershell:
-
-```powershell
-"http://$(oc get route nexus -o jsonpath='{.spec.host}{.spec.path}')"
-
-```
 
 Note the use of jsonpath expressions to fetch the proper data's from the OpenShift API.
 
@@ -284,9 +279,7 @@ This is going to show basic details for all pods in this project (including the 
 $ oc logs [POD NAME]
 ```
 
-You will see in the output details of your app starting up and any status messages it has reported since it started.
-
-You can see more details about the pod itself with `oc describe pod/`
+You will see in the output details of your app starting up and any status messages it has reported since it started. Visist the application a couple of times and you'll see new logs being outputted to your console.
 
 ## 7. How about we set some environment variables?
 
@@ -349,7 +342,7 @@ Let’s walk through a simple example of how the replication controller can keep
 Goto the terminal and try the following:
 
 ```
-$ oc scale --replicas=4 dc/dc-metro-map
+$ oc scale --replicas=4 deployment/dc-metro-map
 ```
 
 Check out the new pods:
@@ -379,8 +372,10 @@ If you’re fast enough you’ll see the pod you deleted go “Terminating” an
 You can see the more details about your deployment configuration with:
 
 ```
-$ oc describe dc/dc-metro-map
+$ oc describe deployment/dc-metro-map
 ```
+
+Inspect the 'Replicas:' & 'RollingUpdateStrategy:' output.
 
 ### Application Health
 
@@ -390,7 +385,7 @@ Choose a running pod and shell into it:
 
 ```
 $ oc get pods
-$ oc rsh PODNAME
+$ oc rsh <PODNAME>
 ```
 
 You are now executing a bash shell running in the container of the pod. Let’s kill our webapp and see what happens.
