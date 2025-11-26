@@ -178,7 +178,7 @@ Deploy the Metro Map application which is hosted on the Quay.io registry:
 
 ```
 $ oc project lab1-$USER
-$ oc new-app --image quay.io/thomasmeeus/metro-map:latest --name dc-metro-map
+$ oc new-app --image quay.io/karthik_jk/dc-metro-map:f810912f53879de93c0d7a8c1a7937cc0a24d4ed --name dc-metro-map
 $ oc expose service dc-metro-map
 ```
 
